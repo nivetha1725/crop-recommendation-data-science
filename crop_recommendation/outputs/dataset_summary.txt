@@ -1,0 +1,275 @@
+
+======================================================================
+ROUND 1 - 1. OBJECTIVE
+======================================================================
+Input : soil nutrients, pH, temperature, humidity, rainfall
+Output: Recommended Crop Class (multi-class classification)
+
+======================================================================
+2. DATASET UNDERSTANDING
+======================================================================
+Dataset file : dataset.csv
+Shape        : (1005, 8)
+Rows         : 1005
+Columns      : 8
+Column names : ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall', 'label']
+
+Data types:
+N              float64
+P              float64
+K              float64
+temperature    float64
+humidity       float64
+ph             float64
+rainfall       float64
+label              str
+
+First 5 rows:
+        N       P       K  temperature  humidity    ph  rainfall   label
+0   96.86   92.07   52.76        30.29     81.03  6.51    196.57  banana
+1   11.91  124.47  192.24        27.88     53.38  6.14     68.01  grapes
+2   19.15  124.20  209.28        30.00     47.11  6.59     81.17  grapes
+3   18.36   27.29   37.84        29.35     71.04  6.66     89.20   mango
+4  115.70   38.34   26.59        28.49     66.97  7.10    110.97  cotton
+
+Last 5 rows:
+           N       P       K  temperature  humidity    ph  rainfall   label
+1000   96.86   92.07   52.76        30.29     81.03  6.51    196.57  banana
+1001   11.91  124.47  192.24        27.88     53.38  6.14     68.01  grapes
+1002   19.15  124.20  209.28        30.00     47.11  6.59     81.17  grapes
+1003   18.36   27.29   37.84        29.35     71.04  6.66     89.20   mango
+1004  115.70   38.34   26.59        28.49     66.97  7.10    110.97  cotton
+
+Missing values per column:
+N              1
+P              0
+K              0
+temperature    0
+humidity       0
+ph             1
+rainfall       1
+label          0
+
+Duplicate rows : 5
+
+Unique values per column:
+N              930
+P              913
+K              917
+temperature    666
+humidity       913
+ph             197
+rainfall       942
+label           10
+
+Target column        : label
+Numerical columns    : ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
+Categorical inputs   : none (target is the only text column)
+Number of classes    : 10
+Crop classes         : ['banana', 'chickpea', 'coffee', 'cotton', 'grapes', 'kidneybeans', 'maize', 'mango', 'rice', 'watermelon']
+
+Class distribution:
+label
+grapes         102
+banana         101
+mango          101
+cotton         101
+watermelon     100
+maize          100
+rice           100
+coffee         100
+chickpea       100
+kidneybeans    100
+
+Min / Max of numerical features:
+               min     max
+N            10.00  140.00
+P            15.00  149.27
+K            15.00  230.57
+temperature  17.36   32.00
+humidity     15.00   90.00
+ph            5.00    7.80
+rainfall     40.00  280.00
+
+======================================================================
+4. DATA CLEANING
+======================================================================
+[Data types] values that could not be converted to numbers: 0
+[Inconsistent] empty/missing target labels: 0
+[Inconsistent] class names after cleaning: ['banana', 'chickpea', 'coffee', 'cotton', 'grapes', 'kidneybeans', 'maize', 'mango', 'rice', 'watermelon']
+[Inconsistent] N            valid range (0, no limit): 0 invalid values
+[Inconsistent] P            valid range (0, no limit): 0 invalid values
+[Inconsistent] K            valid range (0, no limit): 0 invalid values
+[Inconsistent] temperature  valid range (-10, 60): 0 invalid values
+[Inconsistent] humidity     valid range (0, 100): 0 invalid values
+[Inconsistent] ph           valid range (0, 14): 0 invalid values
+[Inconsistent] rainfall     valid range (0, no limit): 0 invalid values
+[Duplicates] exact duplicate rows found and removed: 5
+[Missing] before -> after filling with the median:
+             before  after
+N                 1      0
+P                 0      0
+K                 0      0
+temperature       0      0
+humidity          0      0
+ph                1      0
+rainfall          1      0
+
+Cleaning summary: 1005 rows -> 1000 rows (5 duplicates removed, 3 missing values filled, 0 invalid values found)
+
+======================================================================
+5. OUTLIER DETECTION (IQR METHOD)
+======================================================================
+Method: Q1 = 25th percentile, Q3 = 75th percentile, IQR = Q3 - Q1.
+A value is a possible outlier if it is below Q1 - 1.5*IQR or above Q3 + 1.5*IQR.
+
+                Q1      Q3    IQR  Lower   Upper  outliers  outlier_%
+feature                                                              
+N            28.77   98.79  70.02 -76.26  203.82         0        0.0
+P            39.84   61.32  21.48   7.62   93.55       106       10.6
+K            27.66   57.70  30.03 -17.38  102.74       100       10.0
+temperature  22.20   27.73   5.53  13.90   36.03         0        0.0
+humidity     51.01   77.27  26.26  11.62  116.66         0        0.0
+ph            6.07    6.68   0.61   5.16    7.59         5        0.5
+rainfall     76.69  156.75  80.06 -43.40  276.84         1        0.1
+
+Are the outliers real agricultural observations? Which crops do they belong to?
+  P           : 106 outliers, mostly from {'grapes': 100, 'banana': 6}
+  K           : 100 outliers, mostly from {'grapes': 100}
+  ph          : 5 outliers, mostly from {'coffee': 3, 'cotton': 2}
+  rainfall    : 1 outliers, mostly from {'rice': 1}
+
+DECISION: no outlier is removed or clipped. All values are inside physically possible
+ranges (see cleaning step) and the outliers are concentrated in specific crops
+(for example very high P and K are typical for one crop). They are real crop-specific
+conditions that help the model, so deleting them would remove useful information.
+
+======================================================================
+7. DESCRIPTIVE STATISTICS
+======================================================================
+              count    mean    std    min    25%    50%     75%     max
+N            1000.0   69.30  36.70  10.00  28.77  84.85   98.79  140.00
+P            1000.0   56.14  28.32  15.00  39.84  48.89   61.32  149.27
+K            1000.0   58.60  53.22  15.00  27.66  41.48   57.70  230.57
+temperature  1000.0   25.08   3.31  17.36  22.20  25.58   27.73   32.00
+humidity     1000.0   61.02  19.35  15.00  51.01  64.82   77.27   90.00
+ph           1000.0    6.36   0.45   5.00   6.07   6.36    6.68    7.80
+rainfall     1000.0  115.65  54.17  40.00  76.69  90.91  156.75  280.00
+
+Mean of each feature per crop:
+                 N      P      K  temperature  humidity   ph  rainfall
+label                                                                 
+banana        98.9   82.6   51.7         28.0      80.3  6.2     177.9
+chickpea      34.4   59.3   78.7         21.0      24.3  6.7      73.8
+coffee       100.2   25.5   37.0         21.5      80.5  5.7     185.9
+cotton       120.7   43.1   24.7         27.9      62.7  6.8      95.6
+grapes        23.0  125.5  209.4         24.1      52.7  6.5      75.4
+kidneybeans   25.3   50.2   25.4         21.6      32.4  6.2      79.2
+maize         79.9   47.1   22.0         23.9      65.3  6.4      89.9
+mango         25.1   27.8   37.3         27.8      59.8  6.5      98.4
+rice          95.3   45.2   42.3         26.6      82.1  6.0     210.2
+watermelon    90.3   55.1   57.5         28.5      70.0  6.5      70.1
+
+Simple observations:
+  - Most variable feature (highest std): rainfall
+  - Crop classes are balanced (100 to 100 rows each), so accuracy is a fair metric.
+  - Crops differ clearly in their average N, P, K, humidity and rainfall (table above).
+
+======================================================================
+8-9. EDA VISUALIZATIONS
+======================================================================
+Saved: class_distribution.png, correlation_heatmap.png, and 9 plots in eda_plots/
+
+======================================================================
+6 & 10. ENCODING AND RELEVANT FEATURES
+======================================================================
+Categorical input features: none -> no encoding needed for inputs
+Target encoded with LabelEncoder: banana=0, chickpea=1, coffee=2, cotton=3, grapes=4, kidneybeans=5, maize=6, mango=7, rice=8, watermelon=9
+
+Input features (7 raw): ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
+No ID column exists and the target is not used as an input, so there is no data leakage.
+All features are kept: N, P, K (nutrients), pH, temperature, humidity and rainfall are
+the exact soil/climate factors named in the challenge, and the crop means above differ
+clearly for each of them.
+
+======================================================================
+ROUND 2 - FEATURE ENGINEERING
+======================================================================
+Engineered features: ['NPK_Total', 'NPK_Average']
+  NPK_Total   = N + P + K   (overall nutrient richness of the soil)
+  NPK_Average = NPK_Total / 3 (average nutrient level)
+Final model features (9): ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall', 'NPK_Total', 'NPK_Average']
+
+======================================================================
+ROUND 2 - TRAIN/TEST SPLIT AND RANDOM FOREST
+======================================================================
+Train rows: 800   Test rows: 200   (test_size=0.20, random_state=42, stratified)
+Random Forest configuration: {'n_estimators': 200, 'random_state': 42, 'n_jobs': -1}
+Note: StandardScaler is included so preprocessing is part of the saved pipeline.
+Random Forest itself does not need scaling, so it does not change the predictions.
+Training finished.
+
+======================================================================
+EVALUATION (on the 20% unseen test set)
+======================================================================
+accuracy  : 1.0000
+precision : 1.0000
+recall    : 1.0000
+f1_score  : 1.0000
+
+Classification report:
+              precision    recall  f1-score   support
+
+      banana       1.00      1.00      1.00        20
+    chickpea       1.00      1.00      1.00        20
+      coffee       1.00      1.00      1.00        20
+      cotton       1.00      1.00      1.00        20
+      grapes       1.00      1.00      1.00        20
+ kidneybeans       1.00      1.00      1.00        20
+       maize       1.00      1.00      1.00        20
+       mango       1.00      1.00      1.00        20
+        rice       1.00      1.00      1.00        20
+  watermelon       1.00      1.00      1.00        20
+
+    accuracy                           1.00       200
+   macro avg       1.00      1.00      1.00       200
+weighted avg       1.00      1.00      1.00       200
+
+Extra check - 5-fold cross-validation accuracy: mean 0.9990 (std 0.0020)
+
+======================================================================
+ERROR ANALYSIS
+======================================================================
+Incorrect predictions: 0 out of 200
+The model made no mistakes on this test set.
+
+======================================================================
+FEATURE IMPORTANCE (Random Forest feature_importances_)
+======================================================================
+P              0.1749
+K              0.1535
+NPK_Average    0.1480
+NPK_Total      0.1389
+humidity       0.1212
+N              0.1081
+rainfall       0.0924
+temperature    0.0559
+ph             0.0071
+
+Top 5 features: ['P', 'K', 'NPK_Average', 'NPK_Total', 'humidity']
+Note: importance shows which features helped the trained model separate crops.
+It does not prove that a feature causes a crop to grow well. NPK_Total/NPK_Average
+share information with N, P and K, so their importance is split among them.
+
+======================================================================
+SAVING METRICS AND MODEL
+======================================================================
+Saved /mnt/user-data/outputs/crop_recommendation/outputs/metrics.json
+Saved /mnt/user-data/outputs/crop_recommendation/models/crop_recommendation_pipeline.pkl
+
+======================================================================
+RELOAD TEST WITH EXAMPLE UNSEEN TEST INPUT (technical test only)
+======================================================================
+Example Unseen Test Input (not real-world ground truth): {'N': 90, 'P': 40, 'K': 40, 'temperature': 25, 'humidity': 80, 'ph': 6.5, 'rainfall': 200}
+Exact row already in dataset? False
+Predicted crop: rice  (model prediction probability 94.5%)
